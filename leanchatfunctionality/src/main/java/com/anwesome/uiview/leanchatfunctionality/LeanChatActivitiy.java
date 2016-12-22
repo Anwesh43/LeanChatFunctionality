@@ -18,6 +18,9 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Created by anweshmishra on 10/12/16.
  */
@@ -95,13 +98,30 @@ public class LeanChatActivitiy extends AppCompatActivity {
         }
         LeanMessageView leanMessageView = new LeanMessageView(this,text,textWidth,textHeight+gap);
         leanMessageView.setX(x);
-        leanMessageView.setY(y);
 
         messageArea.addView(leanMessageView,new ViewGroup.LayoutParams((int)(textWidth),(int)(textHeight+h/15)));
 
         prevMessageView = leanMessageView;
     }
     private class LeanMessageView extends View {
+        private class MessageBody  {
+            private String text;
+            private float x,y;
+            public MessageBody(String text,float x,float y) {
+                this.text = text;
+                this.x = x;
+                this.y = y;
+            }
+            public void draw(Canvas canvas) {
+                paint.setColor(Color.WHITE);
+                paint.setTextSize(AppContants.CHAT_FONT_SIZE-1);
+                canvas.drawText(text,x,y,paint);
+            }
+            public int hashCode() {
+                return text.hashCode()+(int)x+(int)y;
+            }
+        }
+        private List<MessageBody> messageBodies = new ArrayList<>();
         private String message;
         private float mWidth,mHeight;
         private boolean current = true;
@@ -115,11 +135,11 @@ public class LeanChatActivitiy extends AppCompatActivity {
             this.current = current;
         }
         private void drawMessageBody(Canvas canvas,Paint paint) {
-            paint.setColor(AppContants.MESSAGE_COLOR);
+
             int tw = canvas.getWidth();
             int th = (int)mHeight;
             //canvas.drawRoundRect(new RectF(0,0,mWidth,mHeight),mWidth/5,mHeight/5,paint);
-
+            paint.setColor(AppContants.MESSAGE_COLOR);
             paint.setTextSize(AppContants.CHAT_FONT_SIZE-1);
             String tokens[] = message.split("");
 
@@ -127,6 +147,7 @@ public class LeanChatActivitiy extends AppCompatActivity {
             int xh = tw/5,yi = 0, yh = AppContants.CHAT_FONT_SIZE-1;
             for(int i=0;i<tokens.length;i++) {
                 if(paint.measureText(msg+tokens[i]) > 7*tw/10) {
+                    messageBodies.add(new MessageBody(msg,xh,yh));
                     canvas.drawText(msg,xh,yh,paint);
                     msg = ""+tokens[i];
                     yh = yh+AppContants.CHAT_FONT_SIZE-1+tw/40;
@@ -136,6 +157,7 @@ public class LeanChatActivitiy extends AppCompatActivity {
                   msg = msg+tokens[i];
                 }
             }
+            messageBodies.add(new MessageBody(msg,xh,yh));
             float endY = th+yh-(AppContants.CHAT_FONT_SIZE-1);
             canvas.drawRoundRect(new RectF(0,0,tw,th+yh),tw/5,tw/5,paint);
             th = canvas.getHeight();
@@ -147,8 +169,10 @@ public class LeanChatActivitiy extends AppCompatActivity {
                 path.lineTo(tw*0.8f,th);
                 canvas.drawPath(path,paint);
             }
-            paint.setColor(Color.WHITE);
-            canvas.drawText(msg,xh,yh,paint);
+            for(MessageBody messageBody:messageBodies) {
+                messageBody.draw(canvas);
+            }
+
         }
         public void onDraw(Canvas canvas){
             drawMessageBody(canvas,paint);
